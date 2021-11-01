@@ -1,0 +1,25 @@
+{
+  "code": "1",
+  "message": null,
+  "status": "1",
+  "data": {
+    "productList": [
+      {
+        "id": "1212",
+        "name": "the suv is now",
+        "unitPrice": "92.29",
+        "selected": false,
+        "disabled": false,
+        "attrs": [
+          {
+            "id": null,
+            "label": "color",
+            "value": "blue"
+          }
+        ],
+        "shipFrom": "United States",
+        "exclusivePrice": false
+      }
+    ]
+  }
+}
