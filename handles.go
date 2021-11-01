@@ -40,6 +40,7 @@ func doResponseRules(proxy *goproxy.ProxyHttpServer){ // response add cors heade
 						newResp.TransferEncoding = ctx.Req.TransferEncoding
 						newResp.Header = make(http.Header)
 						updateResponse(newResp,&r)
+						return newResp
 					}
 				}
 				return nil
