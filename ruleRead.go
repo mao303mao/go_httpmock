@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"log"
 	"os"
 )
 
@@ -26,18 +27,26 @@ type rule struct {
 	Author string `json:"author"`
 	CreateTime string `json:"createTime"`
 	UpdateDate string `json:"updateDate"`
-	RespRules []respRule `json:"respRules"`
+	UpdateRespRules []respRule `json:"updateRespRules"`
+	NewRespRules []respRule `json:"newRespRules"`
 }
 
-func readRuleFile() (*rule ,error){
+func readRuleFile() error{
 	jsonfile,err:=os.Open("./rules.json")
 	if err!=nil{
-		return nil, err
+		return err
 	}
 	defer jsonfile.Close()
-	ruleConf:=&rule{}
-	if err=json.NewDecoder(jsonfile).Decode(ruleConf);err!=nil{
-		return nil, err
+	fs,err:=jsonfile.Stat()
+	if err!=nil{
+		return err
 	}
-	return ruleConf, nil
+	if fs.ModTime().Unix()>fileUP{
+		if err=json.NewDecoder(jsonfile).Decode(ruleConf);err!=nil{
+			return err
+		}
+		fileUP=fs.ModTime().Unix()
+		log.Println("...配置文件已经更新...",fileUP)
+	}
+	return nil
 }

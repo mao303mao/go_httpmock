@@ -2,9 +2,9 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/elazarl/goproxy"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"regexp"
@@ -18,15 +18,47 @@ const (
 )
 
 func doResponseRules(proxy *goproxy.ProxyHttpServer){ // response add cors headers
-	proxy.OnResponse().DoFunc(
+	proxy.OnRequest().DoFunc( // 构造响应
+		func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
+			if ruleConf==(&rule{}){
+				return req,nil
+			}
+			if ruleConf.NewRespRules==nil {
+				return req,nil
+			}
+			for _,r:=range ruleConf.NewRespRules {
+				if !r.Active {
+					continue
+				}
+				regex:=regexp.MustCompile(r.UrlMatchRegexp)
+				if regex.MatchString(ctx.Req.URL.String()){
+					if r.RespAction.SetBody== (setBody{}) {
+						return req,nil
+					}
+					newResp := &http.Response{}
+					newResp.Request = ctx.Req
+					newResp.TransferEncoding = ctx.Req.TransferEncoding
+					newResp.Header = make(http.Header)
+					if !updateResponse(newResp,&r){
+						continue
+					}
+					return req,newResp
+				}
+			}
+			return req,nil
+		})
+
+	proxy.OnResponse().DoFunc( // 更新响应
 		func (resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response{
-			ruleConf,err:=readRuleFile();if err!=nil{
-				fmt.Println(err)
+			if ruleConf==(&rule{}){
 				return resp
 			}
 			if resp==nil{
-				fmt.Println("服务器响应为空，构造新的响应")
-				for _,r:=range ruleConf.RespRules {
+				log.Println("服务器响应为空，构造新的响应")
+				if ruleConf.UpdateRespRules==nil {
+					return nil
+				}
+				for _,r:=range ruleConf.UpdateRespRules {
 					if !r.Active {
 						continue
 					}
@@ -39,20 +71,24 @@ func doResponseRules(proxy *goproxy.ProxyHttpServer){ // response add cors heade
 						newResp.Request = ctx.Req
 						newResp.TransferEncoding = ctx.Req.TransferEncoding
 						newResp.Header = make(http.Header)
-						updateResponse(newResp,&r)
+						if !updateResponse(newResp,&r){
+							continue
+						}
 						return newResp
 					}
 				}
 				return nil
 			}
-			if ruleConf.RespRules!=nil{
-				for _,r:=range ruleConf.RespRules{
+			if ruleConf.UpdateRespRules!=nil{
+				for _,r:=range ruleConf.UpdateRespRules{
 					if !r.Active{
 						continue
 					}
 					regex:=regexp.MustCompile(r.UrlMatchRegexp)
 					if regex.MatchString(ctx.Req.URL.String()){
-						updateResponse(resp,&r)
+						if !updateResponse(resp,&r){
+							continue
+						}
 						return resp // 设置响应内容则此规则为最后的规则
 						}
 					}
@@ -62,7 +98,7 @@ func doResponseRules(proxy *goproxy.ProxyHttpServer){ // response add cors heade
 
 }
 
-func updateResponse(resp *http.Response, r *respRule) {
+func updateResponse(resp *http.Response, r *respRule) bool{
 	resp.StatusCode = 200
 	resp.Header.Del("Location")
 	if r.RespAction.SetHeaders!=nil { // 设置请求头
@@ -85,17 +121,19 @@ func updateResponse(resp *http.Response, r *respRule) {
 		}
 		respFile,err:=os.Open(r.RespAction.SetBody.BodyFile)
 		if err!=nil{
-			fmt.Printf("文件%s无法打开\n",r.RespAction.SetBody.BodyFile)
-			return
+			log.Printf("文件%s无法打开\n",r.RespAction.SetBody.BodyFile)
+			return false
 		}
 		defer respFile.Close()
 		rBytes,err:=ioutil.ReadAll(respFile)
 		if err!=nil{
-			fmt.Printf("文件%s打开内容报错请检查\n",r.RespAction.SetBody.BodyFile)
-			return
+			log.Printf("文件%s打开内容报错请检查\n",r.RespAction.SetBody.BodyFile)
+			return false
 		}
 		buf:=bytes.NewBuffer(rBytes)
 		resp.ContentLength = int64(buf.Len())
 		resp.Body=ioutil.NopCloser(buf)
+		return true
 	}
+	return true
 }

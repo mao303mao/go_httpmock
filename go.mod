@@ -1,4 +1,4 @@
-module goproxy_demo
+module doba.com/goproxy_demo
 
 go 1.14
 

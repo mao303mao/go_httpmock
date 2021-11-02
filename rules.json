@@ -1,34 +1,52 @@
 {
-  "author": "cccc",
+  "author": "maohuan",
   "createTime": "2021-10-29 09:16",
   "updateDate": "",
-  "respRules": [
+  "newRespRules": [
     {
-      "active":true,
-      "urlMatchRegexp": "channelhub/api/v1/shoppingCart/list",
+      "active": false,
+      "urlMatchRegexp": "1.json$",
       "respAction": {
-        "setHeaders": [
-          {"header":"xxxx","value": "yyy"}
-        ],
-        "setBody":{
+        "setBody": {
           "bodyType": 0,
           "bodyFile": "./respFiles/1.json"
         }
       }
-    },
+    }
+  ],
+  "updateRespRules": [
     {
-      "active":false,
-      "urlMatchRegexp": "\\.(jpg|jpeg|png)$",
+      "active": true,
+      "urlMatchRegexp": "channelhub/api/v1/shoppingCart/list",
       "respAction": {
-        "setBody":{
-          "bodyType": 3,
-          "bodyFile": "./respFiles/2.jpeg"
+        "setHeaders": [
+          {
+            "header": "Access-Control-Allow-Origin",
+            "value": "https://www.doba.com"
+          },
+          {
+            "header": "Access-Control-Allow-Methods",
+            "value": "GET, POST, OPTIONS"
+          },
+          {
+            "header": "Access-Control-Allow-Headers",
+            "value": "Origin, X-Requested-With, Content-Type, Accept"
+          },
+          {
+            "header": "Access-Control-Allow-Credentials",
+            "value": "true"
+          }
+        ],
+        "setBody": {
+          "bodyType": 0,
+          "bodyFile": "./respFiles/1.json"
         }
       }
     }
   ],
-  "_comment_respRules_setHeaders":"数组：每个元素是{\"header\":\"...\",\"value\": \"...\"}",
-  "_comment_respRules_setBody":"bodyType:0-json,1-text,2-html,3-jpg/jpeg; bodyFile: 文件路径, 比如\"./respFile/1.json\""
+  "_comment_tips": "配置文件每10s更新一次",
+  "_comment_respRules_setHeaders": "数组：每个元素是{\"header\":\"...\",\"value\": \"...\"}",
+  "_comment_respRules_setBody": "bodyType:0-json,1-text,2-html,3-jpg/jpeg; bodyFile: 文件路径, 比如\"./respFile/1.json\""
 }
 
 
