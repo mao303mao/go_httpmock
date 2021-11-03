@@ -8,15 +8,17 @@ import (
 	"time"
 )
 
-var ruleConf=&rule{} // 全局初始化
+var ruleConf = &rule{} // 全局初始化
 var fileUP int64=0
 
+
 func autoUpdateConf(){
+	tc:=time.NewTicker(10*time.Second)
 	for{
 		if err:=readRuleFile();err!=nil{
 			log.Printf("获取配置文件的信息异常:%s\n",err.Error())
 		}
-		time.Sleep(10 * time.Second)
+		<-tc.C
 	}
 }
 

@@ -2,12 +2,15 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/elazarl/goproxy"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"regexp"
+	"strings"
 )
 
 const (
@@ -20,10 +23,11 @@ const (
 func doResponseRules(proxy *goproxy.ProxyHttpServer){ // response add cors headers
 	proxy.OnRequest().DoFunc( // 构造响应
 		func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
-			if ruleConf==(&rule{}){
+			if ruleConf.isEmpty() {
+				log.Printf("规则文件内为空\n")
 				return req,nil
 			}
-			if ruleConf.NewRespRules==nil {
+			if ruleConf.NewRespRules==nil || len(ruleConf.NewRespRules)==0 {
 				return req,nil
 			}
 			for _,r:=range ruleConf.NewRespRules {
@@ -32,17 +36,33 @@ func doResponseRules(proxy *goproxy.ProxyHttpServer){ // response add cors heade
 				}
 				regex:=regexp.MustCompile(r.UrlMatchRegexp)
 				if regex.MatchString(ctx.Req.URL.String()){
-					if r.RespAction.SetBody== (setBody{}) {
+					rewriteUrl:=strings.TrimSpace(r.ReWriteUrl)
+					if r.RespAction==nil && rewriteUrl=="" {
 						return req,nil
 					}
-					newResp := &http.Response{}
-					newResp.Request = ctx.Req
-					newResp.TransferEncoding = ctx.Req.TransferEncoding
-					newResp.Header = make(http.Header)
-					if !updateResponse(newResp,&r){
-						continue
+					if rewriteUrl!=""{
+						subMatchs:=regex.FindStringSubmatch(ctx.Req.URL.String())
+						for i,sm:=range subMatchs{
+							rewriteUrl=strings.ReplaceAll(rewriteUrl,fmt.Sprintf("${%d}",i),sm)
+						}
+						newURL,err:=url.Parse(rewriteUrl)
+						if err!=nil{
+							log.Printf("重写的url(%s)格式有误\n",rewriteUrl)
+							return req,nil
+						}
+						ctx.Req.URL=newURL
+						return req,nil
 					}
-					return req,newResp
+					if r.RespAction!=nil && *r.RespAction.SetBody== (setBody{}){
+						newResp := &http.Response{}
+						newResp.Request = ctx.Req
+						newResp.TransferEncoding = ctx.Req.TransferEncoding
+						newResp.Header = make(http.Header)
+						if !updateResponse(newResp,r){
+							continue
+						}
+						return req,newResp
+					}
 				}
 			}
 			return req,nil
@@ -50,12 +70,13 @@ func doResponseRules(proxy *goproxy.ProxyHttpServer){ // response add cors heade
 
 	proxy.OnResponse().DoFunc( // 更新响应
 		func (resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response{
-			if ruleConf==(&rule{}){
+			if ruleConf.isEmpty() {
+				log.Printf("规则文件内为空\n")
 				return resp
 			}
 			if resp==nil{
 				log.Println("服务器响应为空，构造新的响应")
-				if ruleConf.UpdateRespRules==nil {
+				if ruleConf.UpdateRespRules==nil || len(ruleConf.UpdateRespRules)==0{
 					return nil
 				}
 				for _,r:=range ruleConf.UpdateRespRules {
@@ -64,14 +85,14 @@ func doResponseRules(proxy *goproxy.ProxyHttpServer){ // response add cors heade
 					}
 					regex:=regexp.MustCompile(r.UrlMatchRegexp)
 					if regex.MatchString(ctx.Req.URL.String()){
-						if r.RespAction.SetBody== (setBody{}) {
+						if r.RespAction==nil || *r.RespAction.SetBody== (setBody{}) {
 							return nil
 						}
 						newResp := &http.Response{}
 						newResp.Request = ctx.Req
 						newResp.TransferEncoding = ctx.Req.TransferEncoding
 						newResp.Header = make(http.Header)
-						if !updateResponse(newResp,&r){
+						if !updateResponse(newResp,r){
 							continue
 						}
 						return newResp
@@ -79,14 +100,14 @@ func doResponseRules(proxy *goproxy.ProxyHttpServer){ // response add cors heade
 				}
 				return nil
 			}
-			if ruleConf.UpdateRespRules!=nil{
+			if ruleConf.UpdateRespRules!=nil && len(ruleConf.UpdateRespRules)>0{
 				for _,r:=range ruleConf.UpdateRespRules{
 					if !r.Active{
 						continue
 					}
 					regex:=regexp.MustCompile(r.UrlMatchRegexp)
 					if regex.MatchString(ctx.Req.URL.String()){
-						if !updateResponse(resp,&r){
+						if !updateResponse(resp,r){
 							continue
 						}
 						return resp // 设置响应内容则此规则为最后的规则
@@ -106,7 +127,7 @@ func updateResponse(resp *http.Response, r *respRule) bool{
 			resp.Header.Set(sh.Header,sh.Value)
 		}
 	}
-	if r.RespAction.SetBody!= (setBody{}) {
+	if *(r.RespAction.SetBody)!= (setBody{}) {
 		switch r.RespAction.SetBody.BodyType {
 		case 0:
 			resp.Header.Set("Content-Type", ContentTypeJson)

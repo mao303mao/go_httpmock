@@ -15,20 +15,29 @@ type setBody struct {
 	BodyFile string `json:"bodyFile"`
 }
 type respAction struct {
-	SetHeaders []setHeader `json:"setHeaders"`
-	SetBody setBody `json:"setBody"`
+	SetHeaders []*setHeader `json:"setHeaders"`
+	SetBody *setBody `json:"setBody"`
 }
 type respRule struct {
 	Active bool `json:"active"`
 	UrlMatchRegexp string `json:"urlMatchRegexp"`
-	RespAction respAction `json:"respAction"`
+	RespAction *respAction `json:"respAction"`
+	ReWriteUrl string `json:"reWriteUrl"`
 }
 type rule struct {
 	Author string `json:"author"`
 	CreateTime string `json:"createTime"`
 	UpdateDate string `json:"updateDate"`
-	UpdateRespRules []respRule `json:"updateRespRules"`
-	NewRespRules []respRule `json:"newRespRules"`
+	UpdateRespRules []*respRule `json:"updateRespRules"`
+	NewRespRules []*respRule `json:"newRespRules"`
+}
+
+func (this *rule)isEmpty() bool{
+	if  (this.UpdateRespRules==nil || len(this.UpdateRespRules)==0) && (this.NewRespRules==nil || len(this.NewRespRules)==0){
+		return true
+	}
+
+	return false
 }
 
 func readRuleFile() error{
@@ -46,7 +55,7 @@ func readRuleFile() error{
 			return err
 		}
 		fileUP=fs.ModTime().Unix()
-		log.Println("...配置文件已经更新...",fileUP)
+		log.Println("...配置文件已经更新(",fs.ModTime().Format("2006-01-02 15:04:05"),")")
 	}
 	return nil
 }
