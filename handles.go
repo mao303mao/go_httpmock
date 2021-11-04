@@ -51,6 +51,7 @@ func doResponseRules(proxy *goproxy.ProxyHttpServer){ // response add cors heade
 							return req,nil
 						}
 						ctx.Req.URL=newURL
+						ctx.Req.Host=newURL.Host
 						return req,nil
 					}
 					if r.RespAction!=nil && *r.RespAction.SetBody== (setBody{}){

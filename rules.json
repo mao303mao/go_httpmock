@@ -6,7 +6,7 @@
     {
       "active": true,
       "urlMatchRegexp": "(channelhub/api/v1/shoppingCart/list)",
-      "reWriteUrl": "http://127.0.0.1:8003/${1}"
+      "reWriteUrl": "http://10.10.120.86:8003/${1}"
     }
   ],
   "updateRespRules": [
