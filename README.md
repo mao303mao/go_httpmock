@@ -71,7 +71,7 @@ upstreamProxyConfig.json
 - reWriteUrl：转发的url，可以使用urlMatchRegexp的子匹配(${1}、${2}...)，比如这里表示转发到"http://www.baidu.com/channelhub/api/v1/shoppingCart/list"
 - respAction：当reWriteUrl有内容时，respAction就没有用了，这里设置null即可
 
-## 新建http响应，
+## 修改http响应
 这种要求服务端可用，使用规则来更新服务端返回的响应的头及内容，对应字段"updateRespRules"，它是个规则的列表。
 更新响应的规则的结构
 ```
