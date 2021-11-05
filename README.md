@@ -43,10 +43,9 @@ upstreamProxyConfig.json
           {"header": "Access-Control-Allow-Origin","value": "https://www.xxx.com"},
           {"header": "Set-Cookie","value": "lui=VjZnM1N0eGlYQnNZVlNjeTJHWjI0UT09;path=/;domain=.xxx.com;HttpOnly"}
         ],
-        "setBody": {
-          "bodyType": 0,
-          "bodyFile": "./respFiles/getUserInfo1.json"
-        }
+
+         "bodyFile": "./respFiles/getUserInfo1.json"
+        
       }
     }
 ```
@@ -83,10 +82,9 @@ upstreamProxyConfig.json
           {"header": "Access-Control-Allow-Origin","value": "https://www.xxx.com"},
           {"header": "Set-Cookie","value": "lui=VjZnM1N0eGlYQnNZVlNjeTJHWjI0UT09;path=/;domain=.xxx.com;HttpOnly"}
         ],
-        "setBody": {
-          "bodyType": 0,
-          "bodyFile": "./respFiles/getUserInfo1.json"
-        }
+
+         "bodyFile": "./respFiles/getUserInfo1.json"
+        
       }
     }
 ```
