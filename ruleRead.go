@@ -10,13 +10,10 @@ type setHeader struct {
 	Header string `json:"header"`
 	Value string `json:"value"`
 }
-type setBody struct {
-	BodyType int `json:"bodyType"`
-	BodyFile string `json:"bodyFile"`
-}
+
 type respAction struct {
 	SetHeaders []*setHeader `json:"setHeaders"`
-	SetBody *setBody `json:"setBody"`
+	BodyFile string `json:"bodyFile"`
 }
 type respRule struct {
 	Active bool `json:"active"`

@@ -65,10 +65,6 @@ func setUpstreamProxy(server * goproxy.ProxyHttpServer){
 	log.Printf("已使用上行代理(%s)\n",upProxy.ProxyUrl)
 	if strings.TrimSpace(upProxy.ProxyUser)=="" || strings.TrimSpace(upProxy.ProxyPassword)==""{
 		server.ConnectDial = server.NewConnectDialToProxy(upProxy.ProxyUrl)
-		server.OnRequest().Do(goproxy.FuncReqHandler(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
-			setBasicAuth(upProxy.ProxyUser,upProxy.ProxyPassword,req)
-			return req, nil
-		}))
 	}else{
 		server.ConnectDial = server.NewConnectDialToProxyWithHandler(upProxy.ProxyUrl,func(req *http.Request) {
 			setBasicAuth(upProxy.ProxyUser,upProxy.ProxyPassword,req)
