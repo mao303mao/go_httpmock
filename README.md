@@ -40,8 +40,8 @@ upstreamProxyConfig.json
       "urlMatchRegexp": "/api/v1/account/getUserInfo",
       "respAction": {
         "setHeaders": [
-          {"header": "Access-Control-Allow-Origin","value": "https://www.doba.com"},
-          {"header": "Set-Cookie","value": "lui=VjZnM1N0eGlYQnNZVlNjeTJHWjI0UT09;path=/;domain=.doba.com;HttpOnly"}
+          {"header": "Access-Control-Allow-Origin","value": "https://www.xxx.com"},
+          {"header": "Set-Cookie","value": "lui=VjZnM1N0eGlYQnNZVlNjeTJHWjI0UT09;path=/;domain=.xxx.com;HttpOnly"}
         ],
         "setBody": {
           "bodyType": 0,
@@ -80,8 +80,8 @@ upstreamProxyConfig.json
       "urlMatchRegexp": "/api/v1/account/getUserInfo",
       "respAction": {
         "setHeaders": [
-          {"header": "Access-Control-Allow-Origin","value": "https://www.doba.com"},
-          {"header": "Set-Cookie","value": "lui=VjZnM1N0eGlYQnNZVlNjeTJHWjI0UT09;path=/;domain=.doba.com;HttpOnly"}
+          {"header": "Access-Control-Allow-Origin","value": "https://www.xxx.com"},
+          {"header": "Set-Cookie","value": "lui=VjZnM1N0eGlYQnNZVlNjeTJHWjI0UT09;path=/;domain=.xxx.com;HttpOnly"}
         ],
         "setBody": {
           "bodyType": 0,
