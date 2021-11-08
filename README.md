@@ -52,7 +52,7 @@ upstreamProxyConfig.json
 - active：false表示规则禁用，true表示规则启用
 - urlMatchRegexp：表示url匹配的正则表示式(注意json中\要改成\\)
 - respAction：包含setHeaders和setBody
-- setBody：因为是是构造响应，所以setBody必须设置。bodyType：0-json,1-text,2-html,3-jpg/jpeg，bodyFile：填写对应响应文件的路径（比如正常情况都放在respFiles文件夹下）
+- setBody：因为是是构造响应，bodyFile。填写对应响应文件的路径（比如正常情况都放在respFiles文件夹下）
 - setHeaders：是设置相应头的规则列表，比如这里设置了2个响应头Access-Control-Allow-Origin和设置cookie。如不想设置，"setHeaders":[] 或"setHeaders":null
 
 ### 【2】转发url的规则的结构
