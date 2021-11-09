@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/elazarl/goproxy"
 	"io/ioutil"
@@ -90,9 +91,7 @@ func doResponseRules(proxy *goproxy.ProxyHttpServer){ // response add cors heade
 						newResp.Request = ctx.Req
 						newResp.TransferEncoding = ctx.Req.TransferEncoding
 						newResp.Header = make(http.Header)
-						if !updateResponse(newResp,r){
-							continue
-						}
+						updateResponse(newResp,r,false)
 						return req,newResp
 					}
 				}
@@ -106,78 +105,86 @@ func doResponseRules(proxy *goproxy.ProxyHttpServer){ // response add cors heade
 				log.Printf("规则文件内为空\n")
 				return resp
 			}
-			if resp==nil{
-				log.Println("服务器响应为空，构造新的响应")
-				if ruleConf.UpdateRespRules==nil || len(ruleConf.UpdateRespRules)==0{
-					return nil
+			//--------新代码-------
+			if ruleConf.UpdateRespRules==nil || len(ruleConf.UpdateRespRules)==0{
+				return nil
+			}
+			for _,r:=range ruleConf.UpdateRespRules{
+				if !r.Active{  // 规则不启用，下一个
+					continue
 				}
-				for _,r:=range ruleConf.UpdateRespRules {
-					if !r.Active {
-						continue
-					}
-					regex:=regexp.MustCompile(r.UrlMatchRegexp)
-					if regex.MatchString(ctx.Req.URL.String()){
-						if r.RespAction==nil || strings.TrimSpace(r.RespAction.BodyFile)=="" {
+				regex:=regexp.MustCompile(r.UrlMatchRegexp)
+				if regex.MatchString(ctx.Req.URL.String()) { // 请求的url满足匹配规则,且只会处理第1个规则
+					if resp == nil {
+						if r.RespAction == nil || strings.TrimSpace(r.RespAction.BodyFile) == "" {
 							return nil
 						}
 						newResp := &http.Response{}
 						newResp.Request = ctx.Req
 						newResp.TransferEncoding = ctx.Req.TransferEncoding
 						newResp.Header = make(http.Header)
-						if !updateResponse(newResp,r){
-							continue
-						}
+						updateResponse(newResp, r,false)
 						return newResp
 					}
+					updateResponse(resp, r,true)
+					return resp // 设置响应内容则此规则为最后的规则
 				}
-				return nil
-			}
-			if ruleConf.UpdateRespRules!=nil && len(ruleConf.UpdateRespRules)>0{
-				for _,r:=range ruleConf.UpdateRespRules{
-					if !r.Active{
-						continue
-					}
-					regex:=regexp.MustCompile(r.UrlMatchRegexp)
-					if regex.MatchString(ctx.Req.URL.String()){
-						if !updateResponse(resp,r){
-							continue
-						}
-						return resp // 设置响应内容则此规则为最后的规则
-						}
-					}
 			}
 			return resp
 		})
-
 }
 
-func updateResponse(resp *http.Response, r *respRule) bool{
+func updateResponse(resp *http.Response, r *respRule,recordFlag bool) {// 更新响应内容
 	resp.StatusCode = 200
 	resp.Header.Del("Location")
 	bodyFile:=strings.TrimSpace(r.RespAction.BodyFile)
 	if bodyFile!="" {
 		respFile,err:=os.Open(bodyFile)
 		if err!=nil{
-			log.Printf("文件%s无法打开\n",bodyFile)
-			return false
+			if os.IsNotExist(err) && recordFlag && resp.Header.Get("Content-Type")!="" &&
+				strings.Contains(resp.Header.Get("Content-Type"),"application/json") && resp.Body!=nil{
+				go func() {
+					rbody, err := ioutil.ReadAll(resp.Body) // 读取后resp.Body的内容就为空
+					if err!=nil{
+						log.Printf("读取相应的body失败,异常为%s\n",err)
+						return
+					}
+					defer resp.Body.Close()
+					respFile,err=os.OpenFile(bodyFile,os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0766)
+					if err!=nil{
+						log.Printf("创建文件%s失败,异常为%s\n",bodyFile,err)
+						return
+					}
+					defer respFile.Close()
+					var jsonBeuti bytes.Buffer
+					err = json.Indent(&jsonBeuti,rbody,"","  ")
+					if err!=nil{
+						log.Printf("服务端相应的body内容无法json格式化，请检查")
+						return
+					}
+					respFile.Write(jsonBeuti.Bytes())
+				}()
+				return
+			}
+			log.Printf("文件%s无法打开,异常为%s\n,如果服务端返回了对应json,会自动生成对应文件",bodyFile,err)
+			return
 		}
 		defer respFile.Close()
 		rBytes,err:=ioutil.ReadAll(respFile)
 		if err!=nil{
 			log.Printf("文件%s打开内容报错请检查\n",bodyFile)
-			return false
+			return
 		}
 		buf:=bytes.NewBuffer(rBytes)
 		resp.ContentLength = int64(buf.Len())
 		resp.Body=ioutil.NopCloser(buf)
 		suffix := path.Ext(bodyFile)
 		resp.Header.Set("Content-Type", getContentTypeBySuffix(suffix))
-		return true
+		return
 	}
 	if r.RespAction.SetHeaders!=nil { // 设置请求头
 		for _,sh:=range r.RespAction.SetHeaders{
 			resp.Header.Set(sh.Header,sh.Value)
 		}
 	}
-	return true
 }
