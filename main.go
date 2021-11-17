@@ -91,7 +91,7 @@ func main() {
 		case "/cert":
 			certDownloadHandler(w, r)
 		default:
-			http.Error(w, "Unsupported path ", http.StatusNotFound)
+			http.Error(w, "Unsupported path", http.StatusNotFound)
 		}
 	})
 	proxy.NonproxyHandler=nonproxyHandler //覆盖原有的非代理处理

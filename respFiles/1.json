@@ -7,7 +7,11 @@
       {
         "id": "ccccccc",
         "name": "the suv is now",
+<<<<<<< HEAD
         "imgPath": "//image.xxx.com/dg4-xx/dspic.jpg",
+=======
+        "imgPath": "//image.xxx.com/dspic.jpg",
+>>>>>>> 0fbb2d641b4a73c199c17231d7718e1c817e13d4
         "link": "/v/detail/ibKpUVCugzmr",
         "unitPrice": "92.29",
         "selected": false,
