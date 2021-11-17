@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/elazarl/goproxy"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"os"
 	"path"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -186,5 +188,53 @@ func updateResponse(resp *http.Response, r *respRule,recordFlag bool) {// 更新
 		for _,sh:=range r.RespAction.SetHeaders{
 			resp.Header.Set(sh.Header,sh.Value)
 		}
+	}
+}
+
+// 代理介绍页面
+func infoHandler(w http.ResponseWriter, r *http.Request)  {
+	defer r.Body.Close()
+	html:=`
+	<!DOCTYPE html>
+	<html lang="en">
+	<head>
+	    <meta charset="UTF-8">
+	    <title>go http_proxy mock</title>
+	</head>
+	<body>
+	    <div align="center" style="font-size:20px">
+	        <p>这个是基于"github.com/elazarl/goproxy"包，实现利用http代理来mock响应的工具</p>
+            <p>基本了实现类似fiddler的响应替换的功能</p>  
+	        <p>如需处理https，请点击
+				<a href="/cert">下载证书</a>并在对应系统上进行信任(根目录)
+			</p>
+	    </div>
+	</body>
+	</html>
+    `
+	_,err:=w.Write([]byte(html))
+	if err!=nil{
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+}
+
+// 下载证书
+func certDownloadHandler(w http.ResponseWriter, r *http.Request)  {
+	certFile,err:=os.Open("./z.x509.cer")
+	if err!=nil{
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	defer certFile.Close()
+	fileHeader:=make([]byte,512)
+	certFile.Read(fileHeader)
+	fileStat,_:=certFile.Stat()
+	w.Header().Set("Content-Disposition", "attachment; filename=" + "z.x509.cer")
+	w.Header().Set("Content-Type", http.DetectContentType(fileHeader))
+	w.Header().Set("Content-Length", strconv.FormatInt(fileStat.Size(), 10))
+	certFile.Seek(0, 0)
+	_,err=io.Copy(w, certFile)
+	if err!=nil{
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

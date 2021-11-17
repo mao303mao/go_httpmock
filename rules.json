@@ -1,12 +1,12 @@
 {
-  "author": "xxx",
+  "author": "maohuan",
   "createTime": "2021-10-29 09:16",
   "updateDate": "",
   "newRespRules": [
     {
       "active": false,
       "urlMatchRegexp": "(channelhub/api/v1/shoppingCart/list)",
-      "reWriteUrl": "http://10.10.120.86:8003/${1}"
+      "reWriteUrl": "http://www.baidu.com/${1}"
     }
   ],
   "updateRespRules": [

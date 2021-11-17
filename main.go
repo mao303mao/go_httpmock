@@ -75,16 +75,31 @@ func setUpstreamProxy(server * goproxy.ProxyHttpServer){
 		}))
 	}
 }
+// func allowh2c(next http.Handler) http.Handler {
+// 	h2server := &http2.Server{IdleTimeout: time.Second * 60}
+// 	return h2c.NewHandler(next, h2server)
+// }
 
 func main() {
 	go autoUpdateConf()
 	setCA(caCert, caKey)
 	proxy := goproxy.NewProxyHttpServer()
+	nonproxyHandler:=http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/":
+			infoHandler(w, r)
+		case "/cert":
+			certDownloadHandler(w, r)
+		default:
+			http.Error(w, "Unsupported path ", http.StatusNotFound)
+		}
+	})
+	proxy.NonproxyHandler=nonproxyHandler //覆盖原有的非代理处理
 	proxy.Verbose = true
 	proxy.OnRequest().HandleConnect(goproxy.AlwaysMitm)
-	doResponseRules(proxy)
-	setUpstreamProxy(proxy)
-    fmt.Println("启动在本机的8088端口的http/https代理；请将z.x509.cer安装为windows的根信任证书")
-
-	log.Fatal(http.ListenAndServe(":8088", proxy))
+	doResponseRules(proxy) // mock响应处理
+	setUpstreamProxy(proxy) // 设置上行代理处理
+    log.Println("启动在本机的8088端口的http/https代理")
+	log.Println("可浏览器访问8088的网页端，下载z.x509.cer并安装为windows的根信任证书")
+	log.Fatal(http.ListenAndServe(":8088",proxy))
 }
