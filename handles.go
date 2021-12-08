@@ -151,7 +151,8 @@ func updateResponse(resp *http.Response, r *respRule,recordFlag bool) {// 更新
 						log.Printf("读取相应的body失败,异常为%s\n",err)
 						return
 					}
-					defer resp.Body.Close()
+					resp.Body=ioutil.NopCloser(bytes.NewBuffer(rbody)) // 需要再次将内容写回去
+                    defer resp.Body.Close()
 					respFile,err=os.OpenFile(bodyFile,os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0766)
 					if err!=nil{
 						log.Printf("创建文件%s失败,异常为%s\n",bodyFile,err)
