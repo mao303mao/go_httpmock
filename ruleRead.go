@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+	"reflect"
 )
 
 type setHeader struct {
@@ -12,6 +13,7 @@ type setHeader struct {
 }
 
 type respAction struct {
+	PassCORS string `json:"passCORS"`
 	SetHeaders []*setHeader `json:"setHeaders"`
 	BodyFile string `json:"bodyFile"`
 }
@@ -22,9 +24,6 @@ type respRule struct {
 	ReWriteUrl string `json:"reWriteUrl"`
 }
 type rule struct {
-	Author string `json:"author"`
-	CreateTime string `json:"createTime"`
-	UpdateDate string `json:"updateDate"`
 	UpdateRespRules []*respRule `json:"updateRespRules"`
 	NewRespRules []*respRule `json:"newRespRules"`
 }
@@ -33,9 +32,17 @@ func (this *rule)isEmpty() bool{
 	if  (this.UpdateRespRules==nil || len(this.UpdateRespRules)==0) && (this.NewRespRules==nil || len(this.NewRespRules)==0){
 		return true
 	}
-
 	return false
 }
+
+func (this *rule)clear(){
+	if this==nil || this.isEmpty(){
+		return
+	}
+	p := reflect.ValueOf(this).Elem()
+	p.Set(reflect.Zero(p.Type()))
+}
+
 
 func readRuleFile() error{
 	jsonfile,err:=os.Open("./rules.json")
@@ -48,6 +55,7 @@ func readRuleFile() error{
 		return err
 	}
 	if fs.ModTime().Unix()>fileUP{
+		ruleConf.clear()
 		if err=json.NewDecoder(jsonfile).Decode(ruleConf);err!=nil{
 			return err
 		}

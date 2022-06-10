@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -26,6 +27,7 @@ const (
 	ContentTypeGif = "image/gif"
 	ContentTypeJs   = "application/javascript"
 	ContentTypeCss  = "text/css"
+	ContentTypeSvg = "image/svg+xml"
 	ContentXml = "text/xml"
 )
 
@@ -41,6 +43,8 @@ func getContentTypeBySuffix(suffix string) string{
 		return ContentTypeHtml
 	case ".css":
 		return ContentTypeCss
+	case ".svg":
+		return ContentTypeSvg
 	case ".js":
 		return ContentTypeJs
 	case ".json":
@@ -63,6 +67,13 @@ func doResponseRules(proxy *goproxy.ProxyHttpServer){ // response add cors heade
 			}
 			if ruleConf.NewRespRules==nil || len(ruleConf.NewRespRules)==0 {
 				return req,nil
+			}
+			if ctx.Req.URL.Scheme=="https" { // 处理https的url多了443端口的BUG
+				ctx.Req.URL.Host=strings.Replace(ctx.Req.URL.Host,":443","",1)
+			}
+			refererUrl,err:=url.Parse(req.Header.Get("referer"))
+			if err!=nil{
+				refererUrl=nil
 			}
 			for _,r:=range ruleConf.NewRespRules {
 				if !r.Active {
@@ -93,8 +104,11 @@ func doResponseRules(proxy *goproxy.ProxyHttpServer){ // response add cors heade
 						newResp.Request = ctx.Req
 						newResp.TransferEncoding = ctx.Req.TransferEncoding
 						newResp.Header = make(http.Header)
-						updateResponse(newResp,r,false)
-						return req,newResp
+						updateFlag:=updateResponse(newResp,r,false,refererUrl)
+						if updateFlag==1{
+							return req,newResp
+						}
+						return req,nil
 					}
 				}
 			}
@@ -107,16 +121,19 @@ func doResponseRules(proxy *goproxy.ProxyHttpServer){ // response add cors heade
 				log.Printf("规则文件内为空\n")
 				return resp
 			}
-			//--------新代码-------
 			if ruleConf.UpdateRespRules==nil || len(ruleConf.UpdateRespRules)==0{
 				return nil
+			}
+			refererUrl,err:=url.Parse(ctx.Req.Header.Get("referer"))
+			if err!=nil{
+				refererUrl=nil
 			}
 			for _,r:=range ruleConf.UpdateRespRules{
 				if !r.Active{  // 规则不启用，下一个
 					continue
 				}
 				regex:=regexp.MustCompile(r.UrlMatchRegexp)
-				if regex.MatchString(ctx.Req.URL.String()) { // 请求的url满足匹配规则,且只会处理第1个规则
+				if regex.MatchString(ctx.Req.URL.String()) { // 请求的url满足匹配规则,如果处理了body则直接结束
 					if resp == nil {
 						if r.RespAction == nil || strings.TrimSpace(r.RespAction.BodyFile) == "" {
 							return nil
@@ -125,10 +142,14 @@ func doResponseRules(proxy *goproxy.ProxyHttpServer){ // response add cors heade
 						newResp.Request = ctx.Req
 						newResp.TransferEncoding = ctx.Req.TransferEncoding
 						newResp.Header = make(http.Header)
-						updateResponse(newResp, r,false)
+						if updateResponse(newResp, r,false,refererUrl)==0{
+							continue
+						}
 						return newResp
 					}
-					updateResponse(resp, r,true)
+					if (resp.StatusCode<300 ||  resp.StatusCode>=400) && updateResponse(resp, r,true,refererUrl)==0{
+						continue
+					}
 					return resp // 设置响应内容则此规则为最后的规则
 				}
 			}
@@ -136,23 +157,26 @@ func doResponseRules(proxy *goproxy.ProxyHttpServer){ // response add cors heade
 		})
 }
 
-func updateResponse(resp *http.Response, r *respRule,recordFlag bool) {// 更新响应内容
+func updateResponse(resp *http.Response, r *respRule,recordFlag bool,refererUrl *url.URL) int{// 更新响应内容,return 0-仅处理header，1-处理了body
 	resp.StatusCode = 200
 	resp.Header.Del("Location")
 	bodyFile:=strings.TrimSpace(r.RespAction.BodyFile)
+	setResponseFlag:=0
 	if bodyFile!="" {
+		bodyFile="./respFiles/"+bodyFile // 如果改造WebUI，此处需要防止“任意文件读取”
 		respFile,err:=os.Open(bodyFile)
 		if err!=nil{
+			log.Printf("文件%s无法打开,异常为%s,如果服务端返回了对应json,会自动生成对应文件",bodyFile,err)
 			if os.IsNotExist(err) && recordFlag && resp.Header.Get("Content-Type")!="" &&
 				strings.Contains(resp.Header.Get("Content-Type"),"application/json") && resp.Body!=nil{
+				rbody, err := ioutil.ReadAll(resp.Body) // 读取后resp.Body的内容就为空
+				if err!=nil{
+					log.Printf("读取相应的body失败,异常为%s\n",err)
+					return 0 // 异常直接结束
+				}
+				resp.Body=ioutil.NopCloser(bytes.NewBuffer(rbody)) // 需要再次将内容写回去
+				defer resp.Body.Close()
 				go func() {
-					rbody, err := ioutil.ReadAll(resp.Body) // 读取后resp.Body的内容就为空
-					if err!=nil{
-						log.Printf("读取相应的body失败,异常为%s\n",err)
-						return
-					}
-					resp.Body=ioutil.NopCloser(bytes.NewBuffer(rbody)) // 需要再次将内容写回去
-                    defer resp.Body.Close()
 					respFile,err=os.OpenFile(bodyFile,os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0766)
 					if err!=nil{
 						log.Printf("创建文件%s失败,异常为%s\n",bodyFile,err)
@@ -167,57 +191,40 @@ func updateResponse(resp *http.Response, r *respRule,recordFlag bool) {// 更新
 					}
 					respFile.Write(jsonBeuti.Bytes())
 				}()
-				return
+				setResponseFlag=1
+			} else{
+				return setResponseFlag
 			}
-			log.Printf("文件%s无法打开,异常为%s\n,如果服务端返回了对应json,会自动生成对应文件",bodyFile,err)
-			return
+		}else{
+			defer respFile.Close()
+			rBytes,err:=ioutil.ReadAll(respFile)
+			if err!=nil{
+				log.Printf("文件%s打开内容报错请检查\n",bodyFile)
+				return 0 // 异常直接结束
+			}
+			buf:=bytes.NewBuffer(rBytes)
+			resp.ContentLength = int64(buf.Len())
+			resp.Body=ioutil.NopCloser(buf)
+			suffix := path.Ext(bodyFile)
+			resp.Header.Set("Content-Type", getContentTypeBySuffix(suffix))
+			setResponseFlag=1
 		}
-		defer respFile.Close()
-		rBytes,err:=ioutil.ReadAll(respFile)
-		if err!=nil{
-			log.Printf("文件%s打开内容报错请检查\n",bodyFile)
-			return
-		}
-		buf:=bytes.NewBuffer(rBytes)
-		resp.ContentLength = int64(buf.Len())
-		resp.Body=ioutil.NopCloser(buf)
-		suffix := path.Ext(bodyFile)
-		resp.Header.Set("Content-Type", getContentTypeBySuffix(suffix))
-		return
 	}
 	if r.RespAction.SetHeaders!=nil { // 设置请求头
 		for _,sh:=range r.RespAction.SetHeaders{
 			resp.Header.Set(sh.Header,sh.Value)
 		}
 	}
-}
-
-// 代理介绍页面
-func infoHandler(w http.ResponseWriter, r *http.Request)  {
-	defer r.Body.Close()
-	html:=`
-	<!DOCTYPE html>
-	<html lang="en">
-	<head>
-	    <meta charset="UTF-8">
-	    <title>go http_proxy mock</title>
-	</head>
-	<body>
-	    <div align="center" style="font-size:20px">
-	        <p>这个是基于"github.com/elazarl/goproxy"包，实现利用http代理来mock响应的工具</p>
-            <p>基本了实现类似fiddler的响应替换的功能</p>  
-	        <p>如需处理https，请点击
-				<a href="/cert">下载证书</a>并在对应系统上进行信任(根目录)
-			</p>
-	    </div>
-	</body>
-	</html>
-    `
-	_,err:=w.Write([]byte(html))
-	if err!=nil{
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if strings.TrimSpace(r.RespAction.PassCORS)!=""{
+		if r.RespAction.PassCORS=="*" && refererUrl!=nil{
+			r.RespAction.PassCORS=refererUrl.Scheme+"://"+refererUrl.Host
+		}
+		resp.Header.Set("Access-Control-Allow-Origin",r.RespAction.PassCORS)
+		resp.Header.Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		resp.Header.Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
+		resp.Header.Set("Access-Control-Allow-Credentials","true")
 	}
-
+	return setResponseFlag
 }
 
 // 下载证书
@@ -238,4 +245,46 @@ func certDownloadHandler(w http.ResponseWriter, r *http.Request)  {
 	if err!=nil{
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+}
+
+func fileHandler(w http.ResponseWriter, r *http.Request,folder string ) {
+	path := "./"+folder + r.URL.Path
+	f, err := os.Open(path)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+	}
+	defer f.Close()
+	//d, err := f.Stat()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+	}
+	data, err := ioutil.ReadAll(f)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+	}
+	ext := filepath.Ext(path)
+	if contentType := getContentTypeBySuffix(ext); contentType != "" {
+		w.Header().Set("Content-Type", contentType)
+	}
+	//w.Header().Set("Content-Length", strconv.FormatInt(d.Size(), 10))
+	w.Write(data)
+}
+
+func saveConf(w http.ResponseWriter, r *http.Request){
+	if r.Method!="POST"{
+		w.WriteHeader(405)
+		return
+	}
+	jsonStr:=r.PostFormValue("json")
+	conFilePath:="./rules.json"
+	var conFile *os.File
+	if _,err:=os.Stat(conFilePath);err!=nil && os.IsNotExist(err){
+		conFile,_=os.OpenFile(conFilePath,os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0766)
+	}else{
+		conFile,_=os.OpenFile(conFilePath,os.O_RDWR|os.O_TRUNC, 0766)
+	}
+	defer conFile.Close()
+	conFile.Write([]byte(jsonStr))
+	w.Header().Set("Content-Type", ContentTypeJson)
+	w.Write([]byte(`{"code":0}`))
 }

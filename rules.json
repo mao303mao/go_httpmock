@@ -1,45 +1,33 @@
 {
   "author": "maohuan",
-  "createTime": "2021-10-29 09:16",
-  "updateDate": "",
-  "newRespRules": [
-    {
-      "active": false,
-      "urlMatchRegexp": "(channelhub/api/v1/shoppingCart/list)",
-      "reWriteUrl": "http://www.baidu.com/${1}"
-    }
-  ],
+  "createTime": "2021-10-29T09:16:25+08:00",
+  "newRespRules": [],
   "updateRespRules": [
     {
       "active": true,
-      "urlMatchRegexp": "channelhub/api/v1/shoppingCart/list",
+      "urlMatchRegexp": "https?://.*\\.doba\\.com/",
       "respAction": {
         "setHeaders": [
           {
-            "header": "Access-Control-Allow-Origin",
-            "value": "https://www.xxx.com"
-          },
+            "header": "go_proxy_mock",
+            "value": "v0.6"
+          }
+        ]
+      }
+    },
+    {
+      "active": true,
+      "urlMatchRegexp": "/channelhub/api/v1/account/getUserInfo",
+      "respAction": {
+        "passCORS": "*",
+        "setHeaders": [
           {
-            "header": "Access-Control-Allow-Methods",
-            "value": "GET, POST, OPTIONS"
-          },
-          {
-            "header": "Access-Control-Allow-Headers",
-            "value": "Origin, X-Requested-With, Content-Type, Accept"
-          },
-          {
-            "header": "Access-Control-Allow-Credentials",
-            "value": "true"
+            "header": "SSSS",
+            "value": "1111"
           }
         ],
-        "bodyFile": "./respFiles/1.json"
+        "bodyFile": "userInfo.json"
       }
     }
-  ],
-  "_comment_tips": "配置文件每10s更新一次",
-  "_comment_respRules_setHeaders": "数组：每个元素是{\"header\":\"...\",\"value\": \"...\"}",
-  "_comment_respRules_bodyFile": "文件路径, 比如\"./respFile/1.json\"",
-  "_comment_respRules_rewriteUrl": "转发url,仅newRespRules有效, 可以用urlMatchRegexp中的子匹配,比如http://192.168.23.11:8080/${1}"
+  ]
 }
-
-

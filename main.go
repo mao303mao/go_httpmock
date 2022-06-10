@@ -11,6 +11,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"html/template"
 )
 
 var ruleConf = &rule{} // 全局初始化
@@ -75,21 +76,35 @@ func setUpstreamProxy(server * goproxy.ProxyHttpServer){
 		}))
 	}
 }
-// func allowh2c(next http.Handler) http.Handler {
-// 	h2server := &http2.Server{IdleTimeout: time.Second * 60}
-// 	return h2c.NewHandler(next, h2server)
-// }
 
 func main() {
 	go autoUpdateConf()
 	setCA(caCert, caKey)
 	proxy := goproxy.NewProxyHttpServer()
 	nonproxyHandler:=http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Index(r.URL.Path,"/dist/") == 0 {
+			fileHandler(w, r,"static")
+			return
+		}
+		if strings.Index(r.URL.Path,"/respFiles/") == 0 {
+			fileHandler(w, r,"")
+			return
+		} // 这个是直接响应mock内容
 		switch r.URL.Path {
 		case "/":
-			infoHandler(w, r)
+			func(w http.ResponseWriter, r *http.Request){
+				t,err:=template.ParseFiles("static/index.html")
+				if err!=nil{
+					log.Println(err.Error())
+				}
+				t.Execute(w,nil)
+			}(w,r)
 		case "/cert":
 			certDownloadHandler(w, r)
+		case "/rules.json":
+			fileHandler(w,r,"/")
+		case "/saveRule":
+			saveConf(w,r)
 		default:
 			http.Error(w, "Unsupported path", http.StatusNotFound)
 		}

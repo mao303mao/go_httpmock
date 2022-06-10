@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>go http-proxy mock</title>
+    <link href="../dist/jsoneditor.css" rel="stylesheet" type="text/css">
+    <script src="../dist/jsoneditor.js"></script>
+    <script src="../dist/jquery-3.6.0.min.js"></script>
+    <style type="text/css">
+      code {
+        background-color: #f5f5f5;
+      }
+      #jsoneditor {
+        width: 650px;
+        height: 750px;
+        margin:0px auto;
+      }
+      #jsoneditorTitle{
+       border:1px solid #3883fa;
+        width: 648px;
+        margin:0px auto;
+        background-color: #3883fa;
+        font-size: 18px;
+        color: white;
+      }
+      #jsoneditorTitle > button{
+        float: right;
+        margin: 1px;
+      }
+    </style>
+  </head>
+  <body>
+    <div style="text-align: center">
+      <div>
+        <h1>go http-proxy mock</h1>
+      </div>
+      <div style="margin-bottom: 10px">
+          <div>这个是基于"github.com/elazarl/goproxy"包，实现利用http代理来mock响应的工具</div>
+          <div>可类似fiddler构造|修改响应内容|响应头；也可直接请求响应文件(路径/respFiles/)</div>
+          <div>如代理需处理https，请<a href="/cert">下载证书</a>并在对应系统上进行信任(根目录)</div>
+      </div>
+      <div id="jsoneditorTitle">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;MOCK规则编辑器<button onclick="saveConf()">保存</button></div>
+      <div id="jsoneditor"></div>
+    </div>
+
+    <script>
+      const schema = {
+        "title": "mock代理规则",
+        "description": "URL正则规则拦截，构造或修改响应",
+        "type": "object",
+        "properties": {
+          "newRespRules": {
+            "title": "构建响应规则的列表",
+            "type": "array",
+            "items": {
+              "title": "构建响应规则",
+              "description":"属性有：active,urlMatchRegexp,reWriteUrl,respAction",
+              "type": "object",
+              "properties":{
+                "active":{
+                  "title":"是否启用",
+                  "type":"boolean"
+                },
+                "urlMatchRegexp":{
+                  "title":"URL正则匹配规则",
+                  "type":"string",
+                  "examples":["https?://www\\.doba\\.com/(channelhub/api/v1/account/getUserInfo)"],
+                },
+                "reWriteUrl":{
+                  "title":"重定向的URL",
+                  "description":"完整的url,可用应用urlMatchRegexp中的子匹配(${1},${2}...)",
+                  "type":["null","string"],
+                  "examples":["https://www.newdoba.com/${1}"],
+                  "default":null,
+                },
+                "respAction":{
+                  "title":"响应处理",
+                  "description":"属性有：passCORS,setHeaders,bodyFile",
+                  "type": "object",
+                  "properties":{
+                    "passCORS":{
+                      "title":"忽略CORS错误",
+                      "description":"填写URL主路径或*",
+                      "type":"string",
+                      "examples":["*","https://www.doba.com"]
+                    },
+                    "bodyFile":{
+                      "title":"替换响应的文件名称",
+                      "description":"文件需要放在respFiles文件夹下",
+                      "type":"string",
+                      "examples":["mock.json"]
+                    },
+                    "setHeaders":{
+                      "title":"设置响应头列表",
+                      "type":"array",
+                      "items":{
+                        "title":"设置请求头",
+                        "type":"object",
+                        "properties":{
+                          "header":{
+                            "type":["string","number"]
+                          },
+                          "value":{
+                            "type":"string"
+                          }
+                        },
+                        "additionalProperties":false,
+                        "required": ["header","value"]
+                      }
+                    }
+                  },
+                  "additionalProperties":false,
+                  "required": ["bodyFile"],
+                }
+              },
+              "additionalProperties":false,
+              "required": ["active","urlMatchRegexp"],
+              "minProperties": 3,
+            }
+          },
+          "updateRespRules": {
+            "title": "修改相应规则的列表",
+            "type": "array",
+            "items": {
+              "title": "更新响应规则",
+              "description":"属性有：active,urlMatchRegexp,respAction",
+              "type": "object",
+              "properties":{
+                "active":{
+                  "title":"是否启用",
+                  "type":"boolean",
+                },
+                "urlMatchRegexp":{
+                  "title":"URL正则匹配规则",
+                  "type":"string",
+                  "examples":["https?://www\\.doba\\.com/(channelhub/api/v1/account/getUserInfo)"],
+                },
+                "respAction":{
+                  "title":"响应处理",
+                  "description":"属性有：passCORS,setHeaders,bodyFile",
+                  "type": "object",
+                  "properties":{
+                    "passCORS":{
+                      "title":"忽略CORS错误",
+                      "description":"填写URL主路径或*",
+                      "type":"string",
+                      "examples":["*","https://www.doba.com"]
+                    },
+                    "bodyFile":{
+                      "title":"替换响应的文件名称",
+                      "description":"文件需要放在respFiles文件夹下",
+                      "type":"string",
+                      "examples":["mock.json"]
+                    },
+                    "setHeaders":{
+                      "title":"设置响应头列表",
+                      "type":"array",
+                      "items":{
+                        "title":"设置请求头",
+                        "type":"object",
+                        "properties":{
+                          "header":{
+                            "type":["string","number"]
+                          },
+                          "value":{
+                            "type":"string"
+                          }
+                        },
+                        "additionalProperties":false,
+                        "required": ["header","value"]
+                      }
+                    }
+                  },
+                  "additionalProperties":false,
+                  "minProperties": 1,
+                }
+              },
+              "additionalProperties":false,
+              "required": ["active","urlMatchRegexp","respAction"]
+            }
+          },
+          "author":{
+            "title": "创建人",
+            "type": "string"
+          },
+          "createTime":{
+            "title": "创建人",
+            "type": "string",
+            "format":"date-time"
+          },
+        },
+        "required": ["newRespRules", "updateRespRules"]
+      }
+      const container = document.getElementById('jsoneditor')
+      const options = {
+        mode: 'tree',
+        modes: ['code',  'tree'], // allowed modes
+        schema: schema,
+        onChangeJson: function (json){
+          console.log(json)
+        }
+      }
+      $(document).ready(function(){
+        $.get("/rules.json",function (data){
+          jsonEditor = new JSONEditor(container, options, data)
+        })
+      });
+      function saveConf(){
+        validProm=jsonEditor.validate();
+        validProm.then(function(x){
+          console.log(x)
+          if(x && x.length==0){
+            $.post("/saveRule",
+              {"json":JSON.stringify(jsonEditor.get(), null, 2)},
+              function (d) {if(d.code===0){alert("保存成功")}}
+            )
+          }
+        })
+      }
+    </script>
+  </body>
+</html>
