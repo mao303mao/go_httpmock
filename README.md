@@ -1,4 +1,4 @@
-# go_httpmock
+# go_http_proxy_mock
   - 这个是一个简单的http(s) proxy方式的mock工具,基于包"github.com/elazarl/goproxy"
   - 支持url转发
   - 支持更新响应的头及内容
@@ -88,8 +88,17 @@ windows安装z.x509.cer证书（不小心删除也没关系会重新生成），
     }
 ```
 与构造响应的规则结构与规则均一致，不多说了，但setHeaders、setBody都可为null.
+另外针对json响应，如果bodyFile中的文件名不存在，这里会将服务器当前响应的json自动保存下来。
 
 # 【四】响应文件（存放respFiles中）说明
 即存放需要替换响应的文件，比如json、图片、html等。
 比如，通过chrome获取的接口响应内容json，复制并保存下来(需带.json后缀)，在rules中配置好路径，就可以用了。内容随便改，响应随便变。
 响应头中默认会设置一些常用文件的content-type，如果特殊的文件，需要自己配置setHeaders中content-type
+
+# 【五】使用建议
+因为没有做UI部分，其实借助NotePad++的文件夹工作区配合json插件就十分好用。
+比如可以见一个bat文件自动打开对应文件夹：
+```
+@echo off
+"C:\Program Files\Notepad++\notepad++.exe" -openFoldersAsWorkspace -nosession "D:\Program Files\httpmock" | go_httpmock.exe
+```
