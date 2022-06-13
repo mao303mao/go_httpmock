@@ -1,0 +1,33 @@
+{
+  "author": "maohuan",
+  "createTime": "2021-10-29T09:16:25+08:00",
+  "newRespRules": [],
+  "updateRespRules": [
+    {
+      "active": true,
+      "urlMatchRegexp": "https?://.*\\.baidu\\.com/",
+      "respAction": {
+        "setHeaders": [
+          {
+            "header": "go_proxy_mock",
+            "value": "v0.6"
+          }
+        ]
+      }
+    },
+    {
+      "active": true,
+      "urlMatchRegexp": "/api/v1/getUserInfo",
+      "respAction": {
+        "passCORS": "*",
+        "setHeaders": [
+          {
+            "header": "SSSS",
+            "value": "1111"
+          }
+        ],
+        "bodyFile": "1.json"
+      }
+    }
+  ]
+}

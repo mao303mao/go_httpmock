@@ -5,7 +5,7 @@
   "updateRespRules": [
     {
       "active": true,
-      "urlMatchRegexp": "https?://.*\\.doba\\.com/",
+      "urlMatchRegexp": "https?://.*\\.baidu\\.com/",
       "respAction": {
         "setHeaders": [
           {
@@ -17,7 +17,7 @@
     },
     {
       "active": true,
-      "urlMatchRegexp": "/channelhub/api/v1/account/getUserInfo",
+      "urlMatchRegexp": "/api/v1/getUserInfo",
       "respAction": {
         "passCORS": "*",
         "setHeaders": [
@@ -26,7 +26,7 @@
             "value": "1111"
           }
         ],
-        "bodyFile": "userInfo.json"
+        "bodyFile": "1.json"
       }
     }
   ]

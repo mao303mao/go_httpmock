@@ -3,29 +3,6 @@
   "message": null,
   "status": "1",
   "data": {
-    "productList": [
-      {
-        "id": "ccccccc",
-        "name": "the suv is now",
-<<<<<<< HEAD
-        "imgPath": "//image.xxx.com/dg4-xx/dspic.jpg",
-=======
-        "imgPath": "//image.xxx.com/dspic.jpg",
->>>>>>> 0fbb2d641b4a73c199c17231d7718e1c817e13d4
-        "link": "/v/detail/ibKpUVCugzmr",
-        "unitPrice": "92.29",
-        "selected": false,
-        "disabled": false,
-        "attrs": [
-          {
-            "id": null,
-            "label": "color",
-            "value": "blue"
-          }
-        ],
-        "shipFrom": "United States",
-        "exclusivePrice": false
-      }
-    ]
+    "msg":"mock"
   }
 }

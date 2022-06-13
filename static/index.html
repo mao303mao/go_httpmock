@@ -69,9 +69,8 @@
                 "reWriteUrl":{
                   "title":"重定向的URL",
                   "description":"完整的url,可用应用urlMatchRegexp中的子匹配(${1},${2}...)",
-                  "type":["null","string"],
+                  "type":"string",
                   "examples":["https://www.newdoba.com/${1}"],
-                  "default":null,
                 },
                 "respAction":{
                   "title":"响应处理",
@@ -98,7 +97,7 @@
                         "type":"object",
                         "properties":{
                           "header":{
-                            "type":["string","number"]
+                            "type":"string"
                           },
                           "value":{
                             "type":"string"
@@ -160,7 +159,7 @@
                         "type":"object",
                         "properties":{
                           "header":{
-                            "type":["string","number"]
+                            "type":"string"
                           },
                           "value":{
                             "type":"string"
@@ -196,6 +195,41 @@
         mode: 'tree',
         modes: ['code',  'tree'], // allowed modes
         schema: schema,
+        templates: [
+            {
+                text: 'newRespRule',
+                title: '插入一条newRespRule规则',
+                className: 'jsoneditor-type-object',
+                field: 'newRespRule',
+                value: {
+                     'active': false,
+                     'urlMatchRegexp': '^$',
+                     'reWriteUrl': "",
+                     'respAction':{
+                        'setHeaders':[
+                            {'header':'','value':''}
+                        ],
+                        'bodyFile':'mock.json'
+                     }
+                }
+            },
+            {
+                text: 'updateRespRule',
+                title: '插入一条updateRespRule规则',
+                className: 'jsoneditor-type-object',
+                field: 'updateRespRule',
+                value: {
+                     'active': false,
+                     'urlMatchRegexp': '^$',
+                     'respAction':{
+                        'setHeaders':[
+                            {'header':'','value':''}
+                        ],
+                        'bodyFile':'mock.json'
+                     }
+                }
+            }
+        ],    
         onChangeJson: function (json){
           console.log(json)
         }
