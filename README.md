@@ -29,6 +29,8 @@ windows安装z.x509.cer证书（不小心删除也没关系会重新生成），
   原理同“【四】方法二：代理规则（rules.json）说明”
   页面上提供了jsoneditor加上json-schema方式来修改rules.json
  ![image](https://user-images.githubusercontent.com/37785668/173273896-2639999c-b2dd-45fc-af62-7079da7e72af.png)
+ 利用模板生成的规则如果不需要，需要移除。
+ 
 
 # 【四】方法二(不建议直接使用)：代理规则（rules.json）说明
 规则文件rules.json可随意更改，每隔10s自动更新一次（控制台中有提示）
