@@ -28,7 +28,7 @@ windows安装z.x509.cer证书（不小心删除也没关系会重新生成），
 # 【三】方法一（推荐用法）：访问127.0.0.1:8088修改规则
   原理同“【四】方法二：代理规则（rules.json）说明”
   页面上提供了jsoneditor加上json-schema方式来修改rules.json
-  ![image](https://user-images.githubusercontent.com/37785668/173271628-7d8ca2e4-684e-4d5f-90ce-86c8070ea9a3.png)
+ ![image](https://user-images.githubusercontent.com/37785668/173273896-2639999c-b2dd-45fc-af62-7079da7e72af.png)
 
 # 【四】方法二(不建议直接使用)：代理规则（rules.json）说明
 规则文件rules.json可随意更改，每隔10s自动更新一次（控制台中有提示）
@@ -99,11 +99,3 @@ windows安装z.x509.cer证书（不小心删除也没关系会重新生成），
 即存放需要替换响应的文件，比如json、图片、html等。
 比如，通过chrome获取的接口响应内容json，复制并保存下来(需带.json后缀)，在rules中配置好路径，就可以用了。内容随便改，响应随便变。
 响应头中默认会设置一些常用文件的content-type，如果特殊的文件，需要自己配置setHeaders中content-type
-
-# 【六】使用建议
-因为没有做UI部分，其实借助NotePad++的文件夹工作区配合json插件就十分好用。
-比如可以见一个bat文件自动打开对应文件夹：
-```
-@echo off
-"C:\Program Files\Notepad++\notepad++.exe" -openFoldersAsWorkspace -nosession "D:\Program Files\httpmock" | go_httpmock.exe
-```
