@@ -25,11 +25,12 @@ windows安装z.x509.cer证书（不小心删除也没关系会重新生成），
 - proxyUrl：如上格式，表示使用67代理，如想转发到类似fiddler上，可以配置"http://127.0.0.1:8888"
 - proxyUser，proxyPassword：则表示上行代理需要验证的情况，输入对应用户名、密码
 
-# 【三】方法一：访问127.0.0.1:8088修改规则
+# 【三】方法一（推荐用法）：访问127.0.0.1:8088修改规则
   原理同“【四】方法二：代理规则（rules.json）说明”
   页面上提供了jsoneditor加上json-schema方式来修改rules.json
-  
-# 【四】方法二：代理规则（rules.json）说明
+  ![image](https://user-images.githubusercontent.com/37785668/173271628-7d8ca2e4-684e-4d5f-90ce-86c8070ea9a3.png)
+
+# 【四】方法二(不建议直接使用)：代理规则（rules.json）说明
 规则文件rules.json可随意更改，每隔10s自动更新一次（控制台中有提示）
 有2种响应mock，1种是新建http响应，另1种是修改http响应。
 
