@@ -71,10 +71,6 @@ func doResponseRules(proxy *goproxy.ProxyHttpServer){ // response add cors heade
 			if ctx.Req.URL.Scheme=="https" { // 处理https的url多了443端口的BUG
 				ctx.Req.URL.Host=strings.Replace(ctx.Req.URL.Host,":443","",1)
 			}
-			refererUrl,err:=url.Parse(req.Header.Get("referer"))
-			if err!=nil{
-				refererUrl=nil
-			}
 			for _,r:=range ruleConf.NewRespRules {
 				if !r.Active {
 					continue
@@ -100,6 +96,10 @@ func doResponseRules(proxy *goproxy.ProxyHttpServer){ // response add cors heade
 						return req,nil
 					}
 					if r.RespAction!=nil && strings.TrimSpace(r.RespAction.BodyFile)!=""{
+						refererUrl,err:=url.Parse(req.Header.Get("referer"))
+						if err!=nil{
+							refererUrl=nil
+						}
 						newResp := &http.Response{}
 						newResp.Request = ctx.Req
 						newResp.TransferEncoding = ctx.Req.TransferEncoding
@@ -124,20 +124,21 @@ func doResponseRules(proxy *goproxy.ProxyHttpServer){ // response add cors heade
 			if ruleConf.UpdateRespRules==nil || len(ruleConf.UpdateRespRules)==0{
 				return nil
 			}
-			refererUrl,err:=url.Parse(ctx.Req.Header.Get("referer"))
-			if err!=nil{
-				refererUrl=nil
-			}
 			for _,r:=range ruleConf.UpdateRespRules{
 				if !r.Active{  // 规则不启用，下一个
 					continue
 				}
 				regex:=regexp.MustCompile(r.UrlMatchRegexp)
 				if regex.MatchString(ctx.Req.URL.String()) { // 请求的url满足匹配规则,如果处理了body则直接结束
+					refererUrl,err:=url.Parse(ctx.Req.Header.Get("referer"))
+					if err!=nil{
+						refererUrl=nil
+					}
 					if resp == nil {
 						if r.RespAction == nil || strings.TrimSpace(r.RespAction.BodyFile) == "" {
 							return nil
 						}
+
 						newResp := &http.Response{}
 						newResp.Request = ctx.Req
 						newResp.TransferEncoding = ctx.Req.TransferEncoding
@@ -216,10 +217,11 @@ func updateResponse(resp *http.Response, r *respRule,recordFlag bool,refererUrl 
 		}
 	}
 	if strings.TrimSpace(r.RespAction.PassCORS)!=""{
+		allOrigin:=r.RespAction.PassCORS
 		if r.RespAction.PassCORS=="*" && refererUrl!=nil{
-			r.RespAction.PassCORS=refererUrl.Scheme+"://"+refererUrl.Host
+			allOrigin=refererUrl.Scheme+"://"+refererUrl.Host
 		}
-		resp.Header.Set("Access-Control-Allow-Origin",r.RespAction.PassCORS)
+		resp.Header.Set("Access-Control-Allow-Origin",allOrigin)
 		resp.Header.Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 		resp.Header.Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
 		resp.Header.Set("Access-Control-Allow-Credentials","true")
