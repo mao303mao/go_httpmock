@@ -8,8 +8,10 @@
 
 
 # 【一】添加证书为根路径信任证书
-windows安装z.x509.cer证书（不小心删除也没关系会重新生成），选择第三方根证书颁发机构，这样重启浏览器，使用go_httpmock的代理时的https请求就可信任了。
-如果是其他系统平台，可以修改cert.go中的代码+百度/Google
+windows安装z.x509.cer证书（不小心删除也没关系会重新生成）
+1- 选择第三方根证书颁发机构
+2- 重启浏览器，使用go_httpmock的代理时的https请求就可信任了。
+3- 如果是其他系统平台，可以修改cert.go中的代码（百度/Google查询一下）
 
 # 【二】配置上行（upstream）代理
 在启动之前配置upstreamProxyConfig.json即可设置上行代理，结构如下：
@@ -26,9 +28,9 @@ windows安装z.x509.cer证书（不小心删除也没关系会重新生成），
 - proxyUser，proxyPassword：则表示上行代理需要验证的情况，输入对应用户名、密码
 
 # 【三】方法一（推荐用法）：访问127.0.0.1:8088修改规则
-  原理同“【四】方法二：代理规则（rules.json）说明”
-  页面上提供了jsoneditor加上json-schema方式来修改rules.json
-  利用模板生成的规则如果不需要，需要移除。
+  - 原理同“【四】方法二：代理规则（rules.json）说明”
+  - 页面上提供了jsoneditor加上json-schema方式来修改rules.json
+  - 利用模板生成的规则如果不需要，需要移除。
  ![image](https://user-images.githubusercontent.com/37785668/173273896-2639999c-b2dd-45fc-af62-7079da7e72af.png)
  
  
